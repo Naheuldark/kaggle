@@ -27,7 +27,7 @@ def preprocess(train_file, test_file, features, target):
 def train(model):
     """
     Train the specified model and returns the prediction
-    :return:
+    :return: prediction
     """
 
 
