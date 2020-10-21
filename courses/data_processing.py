@@ -33,26 +33,44 @@ def process_categorical_values(train_X, val_X, test_X, cat_cols):
     :param cat_cols: columns containing categorical values only
     :return: processed_cat_train_X, processed_cat_val_X, processed_cat_test_X
     """
-    cat_train_X = train_X[cat_cols]
-    processed_cat_train_X = cat_train_X.copy()
-    for col in cat_train_X.columns:
-        processed_cat_train_X[col].values[:] = 0
+    # Handle missing values (remove columns with more than a quarter of NaN values)
+    imputer = SimpleImputer(strategy='most_frequent')
+
+    cat_train_X = train_X[cat_cols].dropna(axis=1, thresh=train_X.shape[0] * 3 / 4)
+    processed_cat_train_X = pd.DataFrame(imputer.fit_transform(cat_train_X))
+    processed_cat_train_X.columns = cat_train_X.columns
     processed_cat_train_X.index = train_X.index
-    processed_cat_train_X = processed_cat_train_X.astype('int64')
+    columns_with_too_many_missing_values = list(set(cat_cols)-set(processed_cat_train_X.columns))
 
-    cat_val_X = val_X[cat_cols]
-    processed_cat_val_X = cat_val_X.copy()
-    for col in cat_val_X.columns:
-        processed_cat_val_X[col].values[:] = 0
+    cat_val_X = val_X[cat_cols].drop(columns_with_too_many_missing_values, axis=1)
+    processed_cat_val_X = pd.DataFrame(imputer.transform(cat_val_X))
+    processed_cat_val_X.columns = cat_val_X.columns
     processed_cat_val_X.index = val_X.index
-    processed_cat_val_X = processed_cat_val_X.astype('int64')
 
-    cat_test_X = test_X[cat_cols]
-    processed_cat_test_X = cat_test_X.copy()
-    for col in cat_test_X.columns:
-        processed_cat_test_X[col].values[:] = 0
+    cat_test_X = test_X[cat_cols].drop(columns_with_too_many_missing_values, axis=1)
+    processed_cat_test_X = pd.DataFrame(imputer.transform(cat_test_X))
+    processed_cat_test_X.columns = cat_test_X.columns
     processed_cat_test_X.index = test_X.index
-    processed_cat_test_X = processed_cat_test_X.astype('int64')
+
+    # Encode categorical values
+    processed_cat_train_X.to_csv("ptrainX.csv")
+    processed_cat_val_X.to_csv("pvalX.csv")
+    processed_cat_test_X.to_csv("ptestX.csv")
+
+    # Use Label encoding on columns that can and OneHot in other case, or only OneHot tbd what is best
+    label_cols = [col for col in processed_cat_train_X.columns if
+                           set(processed_cat_train_X[col]) == set(processed_cat_val_X[col]) and
+                           set(processed_cat_train_X[col]) == set(processed_cat_test_X[col])]
+
+    print(label_cols)
+
+    # for col in processed_cat_train_X.columns:
+    #     print(col, end=": ")
+    #     print(processed_cat_train_X[col].unique())
+
+    # processed_cat_train_X = processed_cat_train_X.astype('float64')
+    # processed_cat_val_X = processed_cat_val_X.astype('float64')
+    # processed_cat_test_X = processed_cat_test_X.astype('float64')
 
     check_data(processed_cat_train_X, processed_cat_val_X, processed_cat_test_X)
     return processed_cat_train_X, processed_cat_val_X, processed_cat_test_X

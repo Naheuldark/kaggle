@@ -15,7 +15,8 @@ target = 'SalePrice'
 index = 'Id'
 
 train_X, val_X, train_y, val_y, test_X = preprocess(home_file, test_file, target, index, 0.8)
-
+# train_X.to_csv("trainX.csv")
+exit(0)
 ##################
 # MODEL TRAINING #
 ##################
