@@ -34,13 +34,14 @@ def process_categorical_values(train_X, val_X, test_X, cat_cols):
     :return: processed_cat_train_X, processed_cat_val_X, processed_cat_test_X
     """
     # Handle missing values (remove columns with more than a quarter of NaN values)
+    ###############################################################################
     imputer = SimpleImputer(strategy='most_frequent')
 
     cat_train_X = train_X[cat_cols].dropna(axis=1, thresh=train_X.shape[0] * 3 / 4)
     processed_cat_train_X = pd.DataFrame(imputer.fit_transform(cat_train_X))
     processed_cat_train_X.columns = cat_train_X.columns
     processed_cat_train_X.index = train_X.index
-    columns_with_too_many_missing_values = list(set(cat_cols)-set(processed_cat_train_X.columns))
+    columns_with_too_many_missing_values = list(set(cat_cols)-set(cat_train_X.columns))
 
     cat_val_X = val_X[cat_cols].drop(columns_with_too_many_missing_values, axis=1)
     processed_cat_val_X = pd.DataFrame(imputer.transform(cat_val_X))
@@ -53,24 +54,37 @@ def process_categorical_values(train_X, val_X, test_X, cat_cols):
     processed_cat_test_X.index = test_X.index
 
     # Encode categorical values
-    processed_cat_train_X.to_csv("ptrainX.csv")
-    processed_cat_val_X.to_csv("pvalX.csv")
-    processed_cat_test_X.to_csv("ptestX.csv")
+    ###########################
+    # Inspect cardinality
+    low_cardinality_cols = [col for col in cat_train_X.columns if cat_train_X[col].nunique() < 10]
+    high_cardinality_cols = list(set(cat_train_X.columns) - set(low_cardinality_cols))
 
-    # Use Label encoding on columns that can and OneHot in other case, or only OneHot tbd what is best
-    label_cols = [col for col in processed_cat_train_X.columns if
-                           set(processed_cat_train_X[col]) == set(processed_cat_val_X[col]) and
-                           set(processed_cat_train_X[col]) == set(processed_cat_test_X[col])]
+    # Drop columns that cannot be labelled and with high cardinality
+    processed_cat_train_X.drop(high_cardinality_cols, axis=1, inplace=True)
+    processed_cat_val_X.drop(high_cardinality_cols, axis=1, inplace=True)
+    processed_cat_test_X.drop(high_cardinality_cols, axis=1, inplace=True)
 
-    print(label_cols)
+    # Perform encoding
+    OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+    OH_cols_train = pd.DataFrame(OH_encoder.fit_transform(processed_cat_train_X[low_cardinality_cols]))
+    OH_cols_train.index = train_X.index
+    OH_cols_val = pd.DataFrame(OH_encoder.transform(processed_cat_val_X[low_cardinality_cols]))
+    OH_cols_val.index = val_X.index
+    OH_cols_test = pd.DataFrame(OH_encoder.transform(processed_cat_test_X[low_cardinality_cols]))
+    OH_cols_test.index = test_X.index
 
-    # for col in processed_cat_train_X.columns:
-    #     print(col, end=": ")
-    #     print(processed_cat_train_X[col].unique())
+    processed_cat_train_X.drop(low_cardinality_cols, axis=1, inplace=True)
+    processed_cat_val_X.drop(low_cardinality_cols, axis=1, inplace=True)
+    processed_cat_test_X.drop(low_cardinality_cols, axis=1, inplace=True)
 
-    # processed_cat_train_X = processed_cat_train_X.astype('float64')
-    # processed_cat_val_X = processed_cat_val_X.astype('float64')
-    # processed_cat_test_X = processed_cat_test_X.astype('float64')
+    processed_cat_train_X = pd.concat([processed_cat_train_X, OH_cols_train], axis=1)
+    processed_cat_val_X = pd.concat([processed_cat_val_X, OH_cols_val], axis=1)
+    processed_cat_test_X = pd.concat([processed_cat_test_X, OH_cols_test], axis=1)
+
+    # Cast types
+    processed_cat_train_X = processed_cat_train_X.astype('float64')
+    processed_cat_val_X = processed_cat_val_X.astype('float64')
+    processed_cat_test_X = processed_cat_test_X.astype('float64')
 
     check_data(processed_cat_train_X, processed_cat_val_X, processed_cat_test_X)
     return processed_cat_train_X, processed_cat_val_X, processed_cat_test_X
