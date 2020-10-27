@@ -1,124 +1,35 @@
 import pandas as pd
 
-from sklearn.preprocessing import LabelEncoder, OneHotEncoder
-from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
 
 
-def check_data(train_X, val_X, test_X):
+def compute_preprocessor(numerical_cols, categorical_cols):
     """
-    Perform checks on the preprocessed data
-    :param train_X: processed training data
-    :param val_X: processed validation data
-    :param test_X: processed testing data
+    Compute the preprocessor for the data
+    :param numerical_cols: columns containing numerical data
+    :param categorical_cols: columns containing categorical data with low cardinality
+    :return: preprocessor
     """
-    # Assert there is no missing values anymore
-    assert train_X.isnull().sum()[train_X.isnull().sum() > 0].empty
-    assert val_X.isnull().sum()[val_X.isnull().sum() > 0].empty
-    assert test_X.isnull().sum()[test_X.isnull().sum() > 0].empty
+    # Preprocessing for numerical data
+    numerical_transformer = SimpleImputer(strategy='median')
 
-    # Assert there are only numerical values left
-    assert train_X.select_dtypes(include=['object']).empty
-    assert val_X.select_dtypes(include=['object']).empty
-    assert test_X.select_dtypes(include=['object']).empty
+    # Preprocessing for categorical data
+    categorical_transformer = Pipeline(steps=[
+        ('imputer', SimpleImputer(strategy='most_frequent')),
+        ('onehot', OneHotEncoder(handle_unknown='ignore'))
+    ])
 
+    # Bundle preprocessing for numerical and categorical data
+    preprocessor = ColumnTransformer(transformers=[
+        ('num', numerical_transformer, numerical_cols),
+        ('cat', categorical_transformer, categorical_cols)
+    ])
 
-def process_categorical_values(train_X, val_X, test_X, cat_cols):
-    """
-    Process categorical missing values and convert them to numerical
-    Use label encoding and one hot encoding to handle categorical values
-    :param train_X: training data
-    :param val_X: validation data
-    :param test_X: testing data
-    :param cat_cols: columns containing categorical values only
-    :return: processed_cat_train_X, processed_cat_val_X, processed_cat_test_X
-    """
-    # Handle missing values (remove columns with more than a quarter of NaN values)
-    ###############################################################################
-    imputer = SimpleImputer(strategy='most_frequent')
-
-    cat_train_X = train_X[cat_cols].dropna(axis=1, thresh=train_X.shape[0] * 3 / 4)
-    processed_cat_train_X = pd.DataFrame(imputer.fit_transform(cat_train_X))
-    processed_cat_train_X.columns = cat_train_X.columns
-    processed_cat_train_X.index = train_X.index
-    columns_with_too_many_missing_values = list(set(cat_cols)-set(cat_train_X.columns))
-
-    cat_val_X = val_X[cat_cols].drop(columns_with_too_many_missing_values, axis=1)
-    processed_cat_val_X = pd.DataFrame(imputer.transform(cat_val_X))
-    processed_cat_val_X.columns = cat_val_X.columns
-    processed_cat_val_X.index = val_X.index
-
-    cat_test_X = test_X[cat_cols].drop(columns_with_too_many_missing_values, axis=1)
-    processed_cat_test_X = pd.DataFrame(imputer.transform(cat_test_X))
-    processed_cat_test_X.columns = cat_test_X.columns
-    processed_cat_test_X.index = test_X.index
-
-    # Encode categorical values
-    ###########################
-    # Inspect cardinality
-    low_cardinality_cols = [col for col in cat_train_X.columns if cat_train_X[col].nunique() < 10]
-    high_cardinality_cols = list(set(cat_train_X.columns) - set(low_cardinality_cols))
-
-    # Drop columns that cannot be labelled and with high cardinality
-    processed_cat_train_X.drop(high_cardinality_cols, axis=1, inplace=True)
-    processed_cat_val_X.drop(high_cardinality_cols, axis=1, inplace=True)
-    processed_cat_test_X.drop(high_cardinality_cols, axis=1, inplace=True)
-
-    # Perform encoding
-    OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
-    OH_cols_train = pd.DataFrame(OH_encoder.fit_transform(processed_cat_train_X[low_cardinality_cols]))
-    OH_cols_train.index = train_X.index
-    OH_cols_val = pd.DataFrame(OH_encoder.transform(processed_cat_val_X[low_cardinality_cols]))
-    OH_cols_val.index = val_X.index
-    OH_cols_test = pd.DataFrame(OH_encoder.transform(processed_cat_test_X[low_cardinality_cols]))
-    OH_cols_test.index = test_X.index
-
-    processed_cat_train_X.drop(low_cardinality_cols, axis=1, inplace=True)
-    processed_cat_val_X.drop(low_cardinality_cols, axis=1, inplace=True)
-    processed_cat_test_X.drop(low_cardinality_cols, axis=1, inplace=True)
-
-    processed_cat_train_X = pd.concat([processed_cat_train_X, OH_cols_train], axis=1)
-    processed_cat_val_X = pd.concat([processed_cat_val_X, OH_cols_val], axis=1)
-    processed_cat_test_X = pd.concat([processed_cat_test_X, OH_cols_test], axis=1)
-
-    # Cast types
-    processed_cat_train_X = processed_cat_train_X.astype('float64')
-    processed_cat_val_X = processed_cat_val_X.astype('float64')
-    processed_cat_test_X = processed_cat_test_X.astype('float64')
-
-    check_data(processed_cat_train_X, processed_cat_val_X, processed_cat_test_X)
-    return processed_cat_train_X, processed_cat_val_X, processed_cat_test_X
-
-
-def process_numerical_values(train_X, val_X, test_X, num_cols):
-    """
-    Process numerical missing values
-    Use imputation to handle missing value, fit the transform on training data and apply it on validation and test
-    :param train_X: training data
-    :param val_X: validation data
-    :param test_X: testing data
-    :param num_cols: columns containing numerical values only
-    :return: processed_num_train_X, processed_num_val_X, processed_num_test_X
-    """
-    imputer = SimpleImputer(strategy='median')
-
-    num_train_X = train_X[num_cols]
-    processed_num_train_X = pd.DataFrame(imputer.fit_transform(num_train_X))
-    processed_num_train_X.columns = num_train_X.columns
-    processed_num_train_X.index = train_X.index
-
-    num_val_X = val_X[num_cols]
-    processed_num_val_X = pd.DataFrame(imputer.transform(num_val_X))
-    processed_num_val_X.columns = num_val_X.columns
-    processed_num_val_X.index = val_X.index
-
-    num_test_X = test_X[num_cols]
-    processed_num_test_X = pd.DataFrame(imputer.transform(num_test_X))
-    processed_num_test_X.columns = num_test_X.columns
-    processed_num_test_X.index = test_X.index
-
-    check_data(processed_num_train_X, processed_num_val_X, processed_num_test_X)
-    return processed_num_train_X, processed_num_val_X, processed_num_test_X
+    return preprocessor
 
 
 def preprocess(train_file, test_file, target, index, ratio):
@@ -129,13 +40,13 @@ def preprocess(train_file, test_file, target, index, ratio):
     :param target: column used as model target
     :param index: column used as id for each row
     :param ratio: ratio of data belonging to the training set (the rest will be used for validation) [0 < r < 1]
-    :return: train_X, val_X, train_y, val_y, test_X
+    :return: train_X, val_X, train_y, val_y, test_X, preprocessor
     """
     assert 0.0 < ratio < 1.0
 
     # Read the data
     train_data = pd.read_csv(train_file, index_col=index)
-    test_X = pd.read_csv(test_file, index_col=index)
+    test_data = pd.read_csv(test_file, index_col=index)
 
     # Remove rows with missing target
     train_data.dropna(axis=0, subset=[target], inplace=True)
@@ -148,15 +59,18 @@ def preprocess(train_file, test_file, target, index, ratio):
     train_X, val_X, train_y, val_y = train_test_split(X, y, train_size=ratio, test_size=1 - ratio)
 
     # Process the data
-    num_cols = [col for col in train_X.columns if train_X[col].dtype != 'object']
-    cat_cols = [col for col in train_X.columns if train_X[col].dtype == 'object']
-    assert (len(num_cols) + len(cat_cols)) == train_X.shape[1]
+    # Select numerical columns
+    numerical_cols = [col for col in train_X.columns if
+                      train_X[col].dtype in ['int64', 'float64']]
 
-    num_train_X, num_val_X, num_test_X = process_numerical_values(train_X, val_X, test_X, num_cols)
-    cat_train_X, cat_val_X, cat_test_X = process_categorical_values(train_X, val_X, test_X, cat_cols)
+    # Select categorical columns with relatively low cardinality
+    categorical_cols = [col for col in train_X.columns if
+                        train_X[col].nunique() < 10 and
+                        train_X[col].dtype == 'object']
 
-    return num_train_X.join(cat_train_X.set_index(train_X.index), on=train_X.index), \
-           num_val_X.join(cat_val_X.set_index(val_X.index), on=val_X.index), \
+    return train_X[categorical_cols + numerical_cols].copy(), \
+           val_X[categorical_cols + numerical_cols].copy(), \
            train_y, \
            val_y, \
-           num_test_X.join(cat_test_X.set_index(test_X.index), on=test_X.index)
+           test_data[categorical_cols + numerical_cols].copy(), \
+           compute_preprocessor(numerical_cols, categorical_cols)

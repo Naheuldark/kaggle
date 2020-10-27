@@ -1,11 +1,14 @@
 import math
 import pandas as pd
+
 from sklearn.metrics import mean_absolute_error
+from sklearn.pipeline import Pipeline
 
 
-def train(model, train_X, train_y, test_X, test_y):
+def train(preprocessor, model, train_X, train_y, test_X, test_y):
     """
     Train the specified model and returns the trained model
+    :param preprocessor: preprocessor pipeline for the data
     :param model: model to train
     :param train_X: features used to train the model
     :param train_y: target used to train the model
@@ -13,12 +16,18 @@ def train(model, train_X, train_y, test_X, test_y):
     :param test_y: target used to compute the MAE
     :return: model, mae
     """
-    model.fit(train_X, train_y)
+    # Bundle preprocessor and model together
+    bundle = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('model', model)
+    ])
 
-    mae = mean_absolute_error(model.predict(test_X), test_y)
+    bundle.fit(train_X, train_y)
+
+    mae = mean_absolute_error(bundle.predict(test_X), test_y)
     print("Validation MAE: {:,.0f} ({:})".format(mae, model))
 
-    return model, mae
+    return bundle, mae
 
 
 def compute_best_model(models):
@@ -35,7 +44,7 @@ def compute_best_model(models):
             best_model = model
 
     assert best_model is not None
-    print("\nUsing model {:} with lowest MAE {:,.0f}".format(best_model, best_mae))
+    print("\nUsing model {:} with lowest MAE {:,.0f}".format(best_model.steps[1][1], best_mae))
 
     return best_model
 
