@@ -1,8 +1,5 @@
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
-
-from courses.data_processing import preprocess
-from courses.model_training import train, test
+from courses.data_processing import *
+from courses.model_training import *
 
 ###################
 # DATA PROCESSING #
@@ -14,28 +11,31 @@ test_file = "data/home_iowa/test.csv"
 target = 'SalePrice'
 index = 'Id'
 
-train_X, val_X, train_y, val_y, test_X, preprocessor = preprocess(home_file, test_file, target, index, 0.8)
+train_X, train_y, test_X, preprocessor = preprocess_xgboost(home_file, test_file, target, index)
 
 ##################
 # MODEL TRAINING #
 ##################
 
-models = [
-    # DecisionTreeRegressor
-    # train(preprocessor, DecisionTreeRegressor(), train_X, train_y, val_X, val_y),
-    # train(preprocessor, DecisionTreeRegressor(max_leaf_nodes=100), train_X, train_y, val_X, val_y),
+model = XGBRegressor(learning_rate=0.01, n_jobs=4)
 
-    # RandomForestRegressor
-    # train(preprocessor, RandomForestRegressor(), train_X, train_y, val_X, val_y),
-    # train(preprocessor, RandomForestRegressor(n_estimators=50), train_X, train_y, val_X, val_y),
-    train(preprocessor, RandomForestRegressor(n_estimators=100), train_X, train_y, val_X, val_y),
-    train(preprocessor, RandomForestRegressor(n_estimators=100, criterion='mae'), train_X, train_y, val_X, val_y),
-    train(preprocessor, RandomForestRegressor(n_estimators=200, min_samples_split=20), train_X, train_y, val_X, val_y),
-    train(preprocessor, RandomForestRegressor(n_estimators=100, max_depth=7), train_X, train_y, val_X, val_y)
-]
+pipeline = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('model', model)
+])
+
+# Optimize and fine tune model hyper-parameters
+best_model = optimize(pipeline, train_X, train_y)
+
+pipeline = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('model', best_model)
+])
+
+pipeline.fit(train_X, train_y)
 
 ###########
 # TESTING #
 ###########
 
-test(models, test_X, target, index, "data/home_iowa")
+test(model, test_X, target, index, "data/home_iowa")

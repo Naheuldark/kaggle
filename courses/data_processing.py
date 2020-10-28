@@ -7,7 +7,42 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 
 
-def compute_preprocessor(numerical_cols, categorical_cols):
+def import_data(train_file, test_file, target, index):
+    """
+    Import training and testing data
+    :param train_file: CSV file containing the training data
+    :param test_file: CSV file containing the test data
+    :param target: column used as model target
+    :param index: column used as id for each row
+    :return: X, y, test_data
+    """
+    # Read the data
+    train_data = pd.read_csv(train_file, index_col=index)
+    test_data = pd.read_csv(test_file, index_col=index)
+
+    # Remove rows with missing target
+    train_data.dropna(axis=0, subset=[target], inplace=True)
+    y = train_data[target]
+
+    # Separate target from predictors
+    X = train_data.drop([target], axis=1)
+
+    return X, y, test_data
+
+
+def get_columns(X):
+    """
+    Select columns to work with
+    :param X: imported training data
+    :return: all columns, numerical columns, categorical columns
+    """
+    numerical_cols = [col for col in X.columns if X[col].dtype in ['int64', 'float64']]
+    categorical_cols = [col for col in X.columns if X[col].nunique() < 10 and X[col].dtype == 'object']
+
+    return numerical_cols + categorical_cols, numerical_cols, categorical_cols
+
+
+def get_preprocessor(numerical_cols, categorical_cols):
     """
     Compute the preprocessor for the data
     :param numerical_cols: columns containing numerical data
@@ -15,7 +50,11 @@ def compute_preprocessor(numerical_cols, categorical_cols):
     :return: preprocessor
     """
     # Preprocessing for numerical data
-    numerical_transformer = SimpleImputer(strategy='median')
+    # numerical_transformer = Pipeline(steps=[
+    #     ('imputer', SimpleImputer(strategy='median')),
+    #     ('scale', StandardScaler())
+    # ])
+    numerical_transformer = 'passthrough'
 
     # Preprocessing for categorical data
     categorical_transformer = Pipeline(steps=[
@@ -44,33 +83,32 @@ def preprocess(train_file, test_file, target, index, ratio):
     """
     assert 0.0 < ratio < 1.0
 
-    # Read the data
-    train_data = pd.read_csv(train_file, index_col=index)
-    test_data = pd.read_csv(test_file, index_col=index)
+    X, y, test_X = import_data(train_file, test_file, target, index)
 
-    # Remove rows with missing target
-    train_data.dropna(axis=0, subset=[target], inplace=True)
-    y = train_data[target]
-
-    # Separate target from predictors
-    X = train_data.drop([target], axis=1)
+    columns, num_cols, cat_cols = get_columns(X)
 
     # Split training data into training and validation using [ratio]
-    train_X, val_X, train_y, val_y = train_test_split(X, y, train_size=ratio, test_size=1 - ratio)
+    train_X, val_X, train_y, val_y = train_test_split(X, y, train_size=ratio, test_size=1 - ratio, random_state=0)
 
-    # Process the data
-    # Select numerical columns
-    numerical_cols = [col for col in train_X.columns if
-                      train_X[col].dtype in ['int64', 'float64']]
-
-    # Select categorical columns with relatively low cardinality
-    categorical_cols = [col for col in train_X.columns if
-                        train_X[col].nunique() < 10 and
-                        train_X[col].dtype == 'object']
-
-    return train_X[categorical_cols + numerical_cols].copy(), \
-           val_X[categorical_cols + numerical_cols].copy(), \
+    return train_X[columns].copy(), \
+           val_X[columns].copy(), \
            train_y, \
            val_y, \
-           test_data[categorical_cols + numerical_cols].copy(), \
-           compute_preprocessor(numerical_cols, categorical_cols)
+           test_X[columns].copy(), \
+           get_preprocessor(num_cols, cat_cols)
+
+
+def preprocess_xgboost(train_file, test_file, target, index):
+    """
+    Preprocess the data and extract training data, validation data and test data for XGBoost
+    :param train_file: CSV file containing the training data
+    :param test_file: CSV file containing the test data
+    :param target: column used as model target
+    :param index: column used as id for each row
+    :return: train_X, train_y, test_X, preprocessor
+    """
+    X, y, test_X = import_data(train_file, test_file, target, index)
+
+    columns, num_cols, cat_cols = get_columns(X)
+
+    return X[columns].copy(), y, test_X[columns].copy(), get_preprocessor(num_cols, cat_cols)
