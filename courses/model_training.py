@@ -7,6 +7,7 @@ from xgboost import XGBRegressor, DMatrix, cv
 def optimize(pipeline, train_X, train_y):
     """
     Optimize XGBoost Regressor hyper-parameters
+
     :param pipeline: pipeline containing the initial model
     :param train_X: training data
     :param train_y: training targets
@@ -107,7 +108,6 @@ def optimize(pipeline, train_X, train_y):
                     metrics='mae',
                     early_stopping_rounds=100
                     )
-    print("Cross Validation results: ", cv_results)
 
     mae = cv_results['test-mae-mean'].min()
     opt_n_estimators = cv_results['test-mae-mean'].argmin()
@@ -123,6 +123,7 @@ def optimize(pipeline, train_X, train_y):
         'subsample': parameter_space['model__subsample'][0],
         'colsample_bytree': parameter_space['model__colsample_bytree'][0]
     }
+    print(">>> Final hyper-parameters: ", params)
 
     return XGBRegressor(**params, random_state=0)
 
@@ -130,6 +131,7 @@ def optimize(pipeline, train_X, train_y):
 def test(model, test_X, target, index, out_path):
     """
     Test the specified model and generate the CSV submission file
+
     :param model: trained model to test
     :param test_X: features used to test the model
     :param target: column used as model target

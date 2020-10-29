@@ -7,9 +7,20 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 
 
+def read_data(file, index):
+    """
+    Read CSV data and return an Panda Dataframe
+    :param file: CSV file
+    :param index: column used as id for each row
+    :return: pd.Dataframe
+    """
+    return pd.read_csv(file, index_col=index)
+
+
 def import_data(train_file, test_file, target, index):
     """
     Import training and testing data
+
     :param train_file: CSV file containing the training data
     :param test_file: CSV file containing the test data
     :param target: column used as model target
@@ -17,8 +28,8 @@ def import_data(train_file, test_file, target, index):
     :return: X, y, test_data
     """
     # Read the data
-    train_data = pd.read_csv(train_file, index_col=index)
-    test_data = pd.read_csv(test_file, index_col=index)
+    train_data = read_data(train_file, index)
+    test_data = read_data(test_file, index)
 
     # Remove rows with missing target
     train_data.dropna(axis=0, subset=[target], inplace=True)
@@ -33,18 +44,21 @@ def import_data(train_file, test_file, target, index):
 def get_columns(X):
     """
     Select columns to work with
+
     :param X: imported training data
     :return: all columns, numerical columns, categorical columns
     """
     numerical_cols = [col for col in X.columns if X[col].dtype in ['int64', 'float64']]
-    categorical_cols = [col for col in X.columns if X[col].nunique() < 10 and X[col].dtype == 'object']
+    categorical_cols = [col for col in X.columns if X[col].dtype == 'object']
+    columns = numerical_cols + categorical_cols
 
-    return numerical_cols + categorical_cols, numerical_cols, categorical_cols
+    return columns, numerical_cols, categorical_cols
 
 
 def get_preprocessor(numerical_cols, categorical_cols):
     """
     Compute the preprocessor for the data
+
     :param numerical_cols: columns containing numerical data
     :param categorical_cols: columns containing categorical data with low cardinality
     :return: preprocessor
@@ -74,6 +88,7 @@ def get_preprocessor(numerical_cols, categorical_cols):
 def preprocess(train_file, test_file, target, index, ratio):
     """
     Preprocess the data and extract training data, validation data and test data
+
     :param train_file: CSV file containing the training data
     :param test_file: CSV file containing the test data
     :param target: column used as model target
@@ -101,6 +116,7 @@ def preprocess(train_file, test_file, target, index, ratio):
 def preprocess_xgboost(train_file, test_file, target, index):
     """
     Preprocess the data and extract training data, validation data and test data for XGBoost
+
     :param train_file: CSV file containing the training data
     :param test_file: CSV file containing the test data
     :param target: column used as model target

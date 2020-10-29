@@ -1,5 +1,6 @@
 from courses.data_processing import *
 from courses.model_training import *
+from courses.data_analysis import *
 
 ###################
 # DATA PROCESSING #
@@ -12,6 +13,8 @@ target = 'SalePrice'
 index = 'Id'
 
 train_X, train_y, test_X, preprocessor = preprocess_xgboost(home_file, test_file, target, index)
+
+data_analysis(home_file, index, target)
 
 ##################
 # MODEL TRAINING #
@@ -26,6 +29,14 @@ pipeline = Pipeline(steps=[
 
 # Optimize and fine tune model hyper-parameters
 best_model = optimize(pipeline, train_X, train_y)
+# params = {
+#     'n_estimators': 1777,
+#     'learning_rate': 0.01,
+#     'max_depth': 5,
+#     'min_child_weight': 0,
+#     'subsample': 0.5,
+#     'colsample_bytree': 0.5
+# }
 
 pipeline = Pipeline(steps=[
     ('preprocessor', preprocessor),
@@ -38,4 +49,4 @@ pipeline.fit(train_X, train_y)
 # TESTING #
 ###########
 
-test(model, test_X, target, index, "data/home_iowa")
+test(pipeline, test_X, target, index, "data/home_iowa")
