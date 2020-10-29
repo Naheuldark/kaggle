@@ -15,11 +15,12 @@ def optimize(pipeline, train_X, train_y):
     """
     parameter_space = {}
     fine_tune_range = [-1, 0, 1]
+    fine_fine_tune_range = [-0.1, -0.05, 0.0, 0.05, 0.1]
 
     # 1. Find the optimal number of estimators
     # ----------------------------------------
     # Search for the best number of estimators within 200 to 2000 in steps of 200.
-    parameter_space['model__n_estimators'] = [n for n in range(200, 2001, 200)]
+    parameter_space['model__n_estimators'] = [n for n in range(150, 3001, 150)]
     print("Initial parameter search space: ", parameter_space)
 
     # Initializing the grid search.
@@ -27,11 +28,14 @@ def optimize(pipeline, train_X, train_y):
     grid_search = GridSearchCV(pipeline,
                                param_grid=parameter_space,
                                scoring='neg_mean_absolute_error',
-                               cv=folds)
+                               cv=folds,
+                               n_jobs=4,
+                               verbose=1)
 
     grid_search.fit(train_X, train_y)
     print("Best found parameter values: ", grid_search.best_params_)
     print("Best score: ", grid_search.best_score_)
+    print()
 
     # Fix n_estimators to the best found value
     parameter_space['model__n_estimators'] = [grid_search.best_params_['model__n_estimators']]
@@ -46,6 +50,7 @@ def optimize(pipeline, train_X, train_y):
     grid_search.fit(train_X, train_y)
     print("Best found parameter values: ", grid_search.best_params_)
     print("Best score: ", grid_search.best_score_)
+    print()
 
     # 2.2 Fine tune the combination of max_depth and min_child_weight
     # ---------------------------------------------------------------
@@ -53,11 +58,12 @@ def optimize(pipeline, train_X, train_y):
                                            for i in fine_tune_range]
     parameter_space['model__min_child_weight'] = [grid_search.best_params_['model__min_child_weight'] + i
                                                   for i in fine_tune_range]
-    print("Updated parameter space: ", parameter_space)
+    print("Parameter search space: ", parameter_space)
 
     grid_search.fit(train_X, train_y)
     print("Best found parameter values: ", grid_search.best_params_)
     print("Best score: ", grid_search.best_score_)
+    print()
 
     # Fix max_depth and min_child_weight with the best found values
     parameter_space['model__max_depth'] = [grid_search.best_params_['model__max_depth']]
@@ -66,21 +72,22 @@ def optimize(pipeline, train_X, train_y):
     # 3.1 Find the best combination of subsample and colsample_bytree
     # ---------------------------------------------------------------
     # Add subsample and colsample_bytree with possible values 0.6 and 0.9 each.
-    parameter_space['model__subsample'] = [x / 10 for x in [6, 9]]
-    parameter_space['model__colsample_bytree'] = [x / 10 for x in [6, 9]]
-    print("Updated parameter space: ", parameter_space)
+    parameter_space['model__subsample'] = [x for x in [0.3, 0.6, 0.9]]
+    parameter_space['model__colsample_bytree'] = [x for x in [0.3, 0.6, 0.9]]
+    print("Parameter search space: ", parameter_space)
 
     grid_search.fit(train_X, train_y)
     print("Best found parameter values: ", grid_search.best_params_)
     print("Best score: ", grid_search.best_score_)
+    print()
 
     # 3.2 Fine tune the combination of subsample and colsample_bytree
     # ---------------------------------------------------------------
-    parameter_space['model__subsample'] = [grid_search.best_params_['model__subsample'] + i / 10
-                                           for i in fine_tune_range]
-    parameter_space['model__colsample_bytree'] = [grid_search.best_params_['model__colsample_bytree'] + i / 10
-                                                  for i in fine_tune_range]
-    print("Updated parameter space: ", parameter_space)
+    parameter_space['model__subsample'] = [grid_search.best_params_['model__subsample'] + i
+                                           for i in fine_fine_tune_range]
+    parameter_space['model__colsample_bytree'] = [grid_search.best_params_['model__colsample_bytree'] + i
+                                                  for i in fine_fine_tune_range]
+    print("Parameter search space: ", parameter_space)
 
     grid_search.fit(train_X, train_y)
 
@@ -89,7 +96,7 @@ def optimize(pipeline, train_X, train_y):
 
     # 4. Find exact optimal of estimators using early_stopping
     # --------------------------------------------------------
-    print("Fixed parameter values: ", parameter_space)
+    print("Parameter search space: ", parameter_space)
 
     # Setting up parameter dict with found optimal values
     params = {
@@ -125,7 +132,7 @@ def optimize(pipeline, train_X, train_y):
     }
     print(">>> Final hyper-parameters: ", params)
 
-    return XGBRegressor(**params, random_state=0)
+    return XGBRegressor(**params, n_jobs=4, random_state=0)
 
 
 def test(model, test_X, target, index, out_path):

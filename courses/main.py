@@ -14,7 +14,7 @@ index = 'Id'
 
 train_X, train_y, test_X, preprocessor = preprocess_xgboost(home_file, test_file, target, index)
 
-data_analysis(home_file, index, target)
+# data_analysis(home_file, index, target)
 
 ##################
 # MODEL TRAINING #
@@ -30,12 +30,12 @@ pipeline = Pipeline(steps=[
 # Optimize and fine tune model hyper-parameters
 best_model = optimize(pipeline, train_X, train_y)
 # params = {
-#     'n_estimators': 1777,
+#     'n_estimators': 1916,
 #     'learning_rate': 0.01,
 #     'max_depth': 5,
 #     'min_child_weight': 0,
-#     'subsample': 0.5,
-#     'colsample_bytree': 0.5
+#     'subsample': 0.35,
+#     'colsample_bytree': 0.4
 # }
 
 pipeline = Pipeline(steps=[

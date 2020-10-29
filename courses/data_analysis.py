@@ -3,13 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from datetime import datetime
 
-from scipy import stats
-from scipy.stats import skew, boxcox_normmax, norm
-from scipy.special import boxcox1p
-
-import matplotlib.gridspec as gridspec
 from matplotlib.ticker import MaxNLocator
 
 from courses.data_processing import read_data
