@@ -21,7 +21,7 @@ def optimize(pipeline, train_X, train_y):
     # ----------------------------------------
     # Search for the best number of estimators within 200 to 2000 in steps of 200.
     parameter_space['model__n_estimators'] = [n for n in range(150, 3001, 150)]
-    print("Initial parameter search space: ", parameter_space)
+    print("Parameter search space: ", parameter_space)
 
     # Initializing the grid search.
     folds = KFold(n_splits=5, shuffle=True, random_state=0)
@@ -45,7 +45,7 @@ def optimize(pipeline, train_X, train_y):
     # Add max_depth and min_child_weight with possible values 1, 4, 7 each to the search.
     parameter_space['model__max_depth'] = [x for x in [1, 4, 7]]
     parameter_space['model__min_child_weight'] = [x for x in [1, 4, 7]]
-    print("Updated parameter space: ", parameter_space)
+    print("Parameter search space: ", parameter_space)
 
     grid_search.fit(train_X, train_y)
     print("Best found parameter values: ", grid_search.best_params_)

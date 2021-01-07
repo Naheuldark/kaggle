@@ -12,9 +12,9 @@ test_file = "data/home_iowa/test.csv"
 target = 'SalePrice'
 index = 'Id'
 
-train_X, train_y, test_X, preprocessor = preprocess_xgboost(home_file, test_file, target, index)
+train_X, train_y, test_X, preprocessor = preprocess(home_file, test_file, target, index)
 
-# data_analysis(home_file, index, target)
+data_analysis(home_file, index, target)
 
 ##################
 # MODEL TRAINING #

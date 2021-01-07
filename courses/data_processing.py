@@ -9,7 +9,8 @@ from sklearn.preprocessing import OneHotEncoder
 
 def read_data(file, index):
     """
-    Read CSV data and return an Panda Dataframe
+    Read CSV data and return a Panda Dataframe
+
     :param file: CSV file
     :param index: column used as id for each row
     :return: pd.Dataframe
@@ -60,7 +61,8 @@ def get_preprocessor(numerical_cols, categorical_cols):
     Compute the preprocessor for the data
 
     :param numerical_cols: columns containing numerical data
-    :param categorical_cols: columns containing categorical data with low cardinality
+    :param categorical_cols: columns containing categorical data
+    :param categorical_cols: columns containing categorical data
     :return: preprocessor
     """
     # Preprocessing for numerical data
@@ -85,7 +87,7 @@ def get_preprocessor(numerical_cols, categorical_cols):
     return preprocessor
 
 
-def preprocess(train_file, test_file, target, index, ratio):
+def preprocess_split(train_file, test_file, target, index, ratio):
     """
     Preprocess the data and extract training data, validation data and test data
 
@@ -113,7 +115,7 @@ def preprocess(train_file, test_file, target, index, ratio):
            get_preprocessor(num_cols, cat_cols)
 
 
-def preprocess_xgboost(train_file, test_file, target, index):
+def preprocess(train_file, test_file, target, index):
     """
     Preprocess the data and extract training data, validation data and test data for XGBoost
 
