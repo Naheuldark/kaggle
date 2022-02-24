@@ -9,7 +9,7 @@ from matplotlib.ticker import MaxNLocator
 
 from scipy.stats import norm, probplot
 
-from courses.data_processing import read_data
+from data_processing import read_data
 
 pd.options.display.max_columns = 250
 pd.options.display.max_rows = 250

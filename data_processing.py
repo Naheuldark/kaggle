@@ -34,9 +34,9 @@ def import_data(train_file, test_file, target, index):
 
     # Remove rows with missing target
     train_data.dropna(axis=0, subset=[target], inplace=True)
-    y = train_data[target]
 
     # Separate target from predictors
+    y = train_data[target]
     X = train_data.drop([target], axis=1)
 
     return X, y, test_data
@@ -61,7 +61,6 @@ def get_preprocessor(numerical_cols, categorical_cols):
     Compute the preprocessor for the data
 
     :param numerical_cols: columns containing numerical data
-    :param categorical_cols: columns containing categorical data
     :param categorical_cols: columns containing categorical data
     :return: preprocessor
     """

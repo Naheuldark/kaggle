@@ -11,7 +11,7 @@ def optimize(pipeline, train_X, train_y):
     :param pipeline: pipeline containing the initial model
     :param train_X: training data
     :param train_y: training targets
-    :return:
+    :return: optimized XGBoost Regressor model
     """
     parameter_space = {}
     fine_tune_range = [-1, 0, 1]
@@ -19,7 +19,7 @@ def optimize(pipeline, train_X, train_y):
 
     # 1. Find the optimal number of estimators
     # ----------------------------------------
-    # Search for the best number of estimators within 200 to 2000 in steps of 200.
+    # Search for the best number of estimators within 150 to 3000 in steps of 150.
     parameter_space['model__n_estimators'] = [n for n in range(150, 3001, 150)]
     print("Parameter search space: ", parameter_space)
 
@@ -37,7 +37,6 @@ def optimize(pipeline, train_X, train_y):
     print("Best score: ", grid_search.best_score_)
     print()
 
-    # Fix n_estimators to the best found value
     parameter_space['model__n_estimators'] = [grid_search.best_params_['model__n_estimators']]
 
     # 2.1 Find the best combination of max_depth and min_child_weight
@@ -65,13 +64,12 @@ def optimize(pipeline, train_X, train_y):
     print("Best score: ", grid_search.best_score_)
     print()
 
-    # Fix max_depth and min_child_weight with the best found values
     parameter_space['model__max_depth'] = [grid_search.best_params_['model__max_depth']]
     parameter_space['model__min_child_weight'] = [grid_search.best_params_['model__min_child_weight']]
 
     # 3.1 Find the best combination of subsample and colsample_bytree
     # ---------------------------------------------------------------
-    # Add subsample and colsample_bytree with possible values 0.6 and 0.9 each.
+    # Add subsample and colsample_bytree with possible values 0.3, 0.6 and 0.9 each.
     parameter_space['model__subsample'] = [x for x in [0.3, 0.6, 0.9]]
     parameter_space['model__colsample_bytree'] = [x for x in [0.3, 0.6, 0.9]]
     print("Parameter search space: ", parameter_space)
@@ -132,7 +130,7 @@ def optimize(pipeline, train_X, train_y):
     }
     print(">>> Final hyper-parameters: ", params)
 
-    return XGBRegressor(**params, n_jobs=4, random_state=0)
+    return params
 
 
 def test(model, test_X, target, index, out_path):
@@ -147,6 +145,5 @@ def test(model, test_X, target, index, out_path):
     """
     test_predictions = model.predict(test_X)
 
-    output = pd.DataFrame({index: test_X.index,
-                           target: test_predictions})
+    output = pd.DataFrame({index: test_X.index, target: test_predictions})
     output.to_csv(out_path + "/submission.csv", index=False)
