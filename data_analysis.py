@@ -9,6 +9,8 @@ from matplotlib.ticker import MaxNLocator
 
 from scipy.stats import norm, probplot
 
+from sklearn.feature_selection import mutual_info_regression
+
 from data_processing import read_data
 
 pd.options.display.max_columns = 250
@@ -16,6 +18,25 @@ pd.options.display.max_rows = 250
 warnings.filterwarnings('ignore')
 plt.style.use('fivethirtyeight')
 sns.set(font_scale=1.1)
+
+
+def display_mutual_information(X, y):
+    X = X.copy()
+    for colname in X.select_dtypes(["object", "category"]):
+        X[colname], _ = X[colname].factorize()
+
+    # All discrete features should now have integer dtypes
+    discrete_features = [pd.api.types.is_integer_dtype(t) for t in X.dtypes]
+
+    mi_scores = mutual_info_regression(X, y, discrete_features=discrete_features, random_state=0)
+    mi_scores = pd.Series(mi_scores, name="MI Scores", index=X.columns)
+    mi_scores = mi_scores.sort_values(ascending=True)
+
+    width = np.arange(len(mi_scores))
+    ticks = list(mi_scores.index)
+    plt.barh(width, mi_scores)
+    plt.yticks(width, ticks)
+    plt.title("Mutual Information Scores")
 
 
 def display_correlation(X, y):
@@ -157,10 +178,11 @@ def data_analysis(train_file, index, target):
     y = X[target]
     X.drop(target, axis=1, inplace=True)
 
-    display_correlation(X.join(y), target)
-    display_categorical(X.join(y), target)
-    display_numerical(X.join(y), target)
-
-    display_target(X.join(y), target, target + ' Before Log Transformation')
-    y = np.log1p(y)
-    display_target(X.join(y), target, target + ' After Log Transformation')
+    display_mutual_information(X, y)
+    # display_correlation(X.join(y), target)
+    # display_categorical(X.join(y), target)
+    # display_numerical(X.join(y), target)
+    #
+    # display_target(X.join(y), target, target + ' Before Log Transformation')
+    # y = np.log1p(y)
+    # display_target(X.join(y), target, target + ' After Log Transformation')

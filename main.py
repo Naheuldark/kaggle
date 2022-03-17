@@ -4,9 +4,9 @@ from data_analysis import *
 
 # From https://www.kaggle.com/naheuldark/upd-interm-ml-course-wrap-up-mae-13031-top-2/edit
 
-###################
-# DATA PROCESSING #
-###################
+####################
+# DATA ENGINEERING #
+####################
 
 # Data files
 home_file = "data/home_iowa/train.csv"
@@ -14,14 +14,15 @@ test_file = "data/home_iowa/test.csv"
 target = 'SalePrice'
 index = 'Id'
 
-train_X, train_y, test_X, preprocessor = preprocess(home_file, test_file, target, index)
+# Data Analysis
+data_analysis(home_file, index, target)
 
-# data_analysis(home_file, index, target)
+# Data Processing
+train_X, train_y, test_X, preprocessor = preprocess(home_file, test_file, target, index)
 
 ##################
 # MODEL TRAINING #
 ##################
-
 
 # Optimize and fine tune model hyper-parameters
 # ---------------------------------------------
