@@ -19,10 +19,26 @@ warnings.filterwarnings('ignore')
 plt.style.use('fivethirtyeight')
 sns.set(font_scale=1.1)
 
+SMALL_SIZE = 5
+MEDIUM_SIZE = 10
+BIGGER_SIZE = 12
+
+plt.rc('font', size=SMALL_SIZE)  # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 
 def display_mutual_information(X, y):
+    plt.style.use("seaborn-whitegrid")
+    plt.rc("figure", autolayout=True)
+    plt.rc("axes", labelweight="bold", titleweight="bold", titlepad=10)
+
     X = X.copy()
-    for colname in X.select_dtypes(["object", "category"]):
+    for colname in X.select_dtypes(["object", "category", "float64"]):
         X[colname], _ = X[colname].factorize()
 
     # All discrete features should now have integer dtypes
@@ -37,6 +53,7 @@ def display_mutual_information(X, y):
     plt.barh(width, mi_scores)
     plt.yticks(width, ticks)
     plt.title("Mutual Information Scores")
+    plt.show()
 
 
 def display_correlation(X, y):
